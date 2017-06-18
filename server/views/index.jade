@@ -6,27 +6,13 @@ block content
   p Total Request 
     div#total #{totalRequest}
   svg(width="960",height="500")
-  style.
-    body { font: 12px Arial;}
-    path { 
-        stroke: steelblue;
-        stroke-width: 2;
-        fill: none;
-    }
-
-    .axis path,
-    .axis line {
-        fill: none;
-        stroke: grey;
-        stroke-width: 1;
-        shape-rendering: crispEdges;
-    }
   script.
 
-    var parseTime = d3.time.format("%Y/%m/%d %H:%M:%S").parse;
+    var parseTime = d3.timeParse("%Y/%m/%d %H:%M:%S");
     var data = [!{data}];
-    //- var data = [ {num: 102, datetime: 1497754933162},  {num: 109, datetime: 1497754933162}];
+
     var socket = io();
+
     socket.on('total', function(attack){
       document.querySelector("#total").innerText = attack.num;
       data.push({
@@ -35,80 +21,82 @@ block content
       });
       updateData();
     });
-    
-    var margin = {top: 30, right: 20, bottom: 30, left: 50},
-    width = 600 - margin.left - margin.right,
-    height = 270 - margin.top - margin.bottom;
 
+    // d3 draw
+    var svg = d3.select("svg");
+    var margin = {top: 0, right: 0, bottom: 30, left: 40},
+    width = +svg.attr("width")  - margin.left - margin.right,
+    height = +svg.attr("height") - margin.top - margin.bottom;
+    g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    
     // Set the ranges
-    var x = d3.time.scale().range([0, width]);
-    var y = d3.scale.linear().range([height, 0]);
+    var x = d3.scaleTime().rangeRound([margin.left, width]);
+    var y = d3.scaleLinear().rangeRound([height, 0]);
+
+    // Define the line
+    var line = d3.line()
+        .x(function(d) { return x(d.datetime); })
+        .y(function(d) { return y(d.num); });
 
     var data = data.map(function(e){
       return {
         datetime: parseTime(moment(e.datetime).format('YYYY/MM/DD h:mm:ss')),
-        num: e.num
+        num: +e.num
       }
     })
 
-    // Define the axes
-    var xAxis = d3.svg.axis().scale(x)
-        .orient("bottom").ticks(1);
-
-    var yAxis = d3.svg.axis().scale(y)
-        .orient("left").ticks(10);
-
-    // Define the line
-    var valueline = d3.svg.line()
-        .x(function(d) { return x(d.datetime); })
-        .y(function(d) { return y(d.num); });
-        
-    // Adds the svg canvas
-    var svg = d3.select("svg")
-        .append("svg")
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-            .attr("transform", 
-                  "translate(" + margin.left + "," + margin.top + ")");
-
-
     // Scale the range of the data
     x.domain(d3.extent(data, function(d) { return d.datetime; }));
-    y.domain([0, d3.max(data, function(d) { return d.num; })]);
+    y.domain(d3.extent(data, function(d) { return d.num; }));
+
+    // Add the X Axis
+    g.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(-"+margin.left+"," + height + ")")
+            .call(d3.axisBottom(x))
+       .select(".domain")
+            .remove();
+
+    // Add the Y Axis
+    g.append("g")
+            .attr("class", "y axis")
+            .call(d3.axisLeft(y))
+        .append("text")
+            .attr("fill", "#000")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 6)
+            .attr("dy", "1em")
+            .attr("text-anchor", "end")
+            .text("Request");
 
     // Add the valueline path.
     svg.append("path")
+        .datum(data)
         .attr("class", "line")
-        .attr("d", valueline(data));
+        .attr("fill", "none")
+        .attr("stroke", "steelblue")
+        .attr("stroke-linejoin", "round")
+        .attr("stroke-linecap", "round")
+        .attr("stroke-width", 1.5)
+        .attr("d", line);
 
-    // Add the X Axis
-    svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
-        .call(xAxis);
-
-    // Add the Y Axis
-    svg.append("g")
-        .attr("class", "y axis")
-        .call(yAxis);
-
+    var duration = 1000;
     function updateData() {
         // Scale the range of the data again 
-          x.domain(d3.extent(data, function(d) { return d.datetime; }));
-          y.domain([0, d3.max(data, function(d) { return d.num; })]);
+        x.domain(d3.extent(data, function(d) { return d.datetime; }));
+        y.domain(d3.extent(data, function(d) { return d.num; }));
 
         // Select the section we want to apply our changes to
         var svg = d3.select("svg").transition();
 
         // Make the changes
             svg.select(".line")   // change the line
-                .duration(750)
-                .attr("d", valueline(data));
+                .duration(duration)
+                .attr("d", line(data));
             svg.select(".x.axis") // change the x axis
-                .duration(750)
-                .call(xAxis);
+                .duration(duration)
+                .call(d3.axisBottom(x));
             svg.select(".y.axis") // change the y axis
-                .duration(750)
-                .call(yAxis);
+                .duration(duration)
+                .call(d3.axisLeft(y));
     }
