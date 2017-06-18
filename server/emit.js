@@ -16,7 +16,7 @@ module.exports = {
         num++;
         attack  = {
             num : num,
-            datetime: "2016/06/01"
+            datetime: + new Date()
         }
         io.emit('total', attack);
     }

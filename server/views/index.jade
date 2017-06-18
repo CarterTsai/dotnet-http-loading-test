@@ -8,5 +8,6 @@ block content
   script.
     var socket = io();
     socket.on('total', function(attack){
+      console.log(attack);
       document.querySelector("#total").innerText = attack.num;
     });
