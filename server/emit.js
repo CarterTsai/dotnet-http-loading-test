@@ -19,5 +19,11 @@ module.exports = {
             datetime: + new Date()
         }
         io.emit('total', attack);
+    },
+    getAttackNum: function() {
+        return attack.num;
+    },
+    getAttack: function() {
+        return JSON.stringify(attack);
     }
 }

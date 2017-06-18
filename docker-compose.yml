@@ -6,12 +6,12 @@ services:
     volumes:
         - ./dotnet:/dotnetapp
     environment:
-      ATTACK_NUMBER: 100
+      ATTACK_NUMBER: 1000
       TEST_URL: http://192.168.11.18:3000
     command: ["/bin/bash", "run.sh"]
     # depends_on:
     #   - mysql
-    # restart: always
+    restart: always
     networks:
       - back-tier
 
