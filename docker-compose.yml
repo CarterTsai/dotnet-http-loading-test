@@ -1,0 +1,19 @@
+version: "2.1"
+services:
+  dotnet-attack:
+    image: microsoft/dotnet:2.0-sdk
+    working_dir: /dotnetapp
+    volumes:
+        - ./dotnet:/dotnetapp
+    environment:
+      ATTACK_NUMBER: 100
+      TEST_URL: http://192.168.11.18:3000
+    command: ["/bin/bash", "run.sh"]
+    # depends_on:
+    #   - mysql
+    # restart: always
+    networks:
+      - back-tier
+
+networks:
+  back-tier:
